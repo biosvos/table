@@ -1,16 +1,8 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
-	"strings"
-)
-
-const (
-	columnKey = "column"
-
-	columEnumType = "enum"
 )
 
 func RowValues(v any) []string {
@@ -18,26 +10,9 @@ func RowValues(v any) []string {
 	var ret []string
 	for i := 0; i < values.NumField(); i++ {
 		field := values.Field(i)
-		ret = append(ret, stringValue(&field))
+		ret = append(ret, columnValue(&field))
 	}
 	return ret
-}
-
-func stringValue(field *reflect.Value) string {
-	return fmt.Sprintf("%v", *field)
-}
-
-func validateColumn(sf *reflect.StructField, v *reflect.Value) error {
-	if !isRestrictedColumn(sf) {
-		return nil
-	}
-
-	available := availableValues(sf)
-	if !containValue(available, stringValue(v)) {
-		return errors.Errorf("field(%v) is invalid", sf.Name)
-	}
-
-	return nil
 }
 
 func ValidateRow(v any) error {
@@ -52,40 +27,4 @@ func ValidateRow(v any) error {
 		}
 	}
 	return nil
-}
-
-func containValue(available []string, value string) bool {
-	for _, item := range available {
-		if item == value {
-			return true
-		}
-	}
-	return false
-}
-
-func availableValues(sf *reflect.StructField) []string {
-	value, ok := sf.Tag.Lookup(columnKey)
-	if !ok {
-		return nil
-	}
-
-	if value != columEnumType {
-		return nil
-	}
-
-	enum := sf.Tag.Get("enum")
-	return strings.Split(enum, ",")
-}
-
-func isRestrictedColumn(sf *reflect.StructField) bool {
-	value, ok := sf.Tag.Lookup(columnKey)
-	if !ok {
-		return false
-	}
-
-	if value != columEnumType {
-		return false
-	}
-
-	return true
 }
